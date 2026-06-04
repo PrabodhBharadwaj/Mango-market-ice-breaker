@@ -530,7 +530,39 @@ function renderPlayerJoin(){
   }
   renderPlayerBid();
 }
-function selectPlayer(name){playerName=name;playChime();renderPlayerBid();}
+var gamePhaseListener=null;
+function selectPlayer(name){
+  playerName=name;playChime();
+  // Start listening to game state changes so player screen reacts to host actions
+  dbOff(gamePhaseListener);
+  gamePhaseListener=dbOn('game',function(data){
+    if(!data||!playerName)return;
+    // Sync round and currency in case we're mid-game
+    if(data.round!==undefined&&data.round!==round){round=data.round;currency=data.currency||currency;}
+    if(document.getElementById('s-player').classList.contains('active')){
+      if(data.phase==='revealed'){
+        showPlayerRevealWait();
+      } else if(data.phase==='bidding'){
+        renderPlayerBid();
+      } else if(data.phase==='done'){
+        document.getElementById('player-card-inner').innerHTML='<div class="submitted-state"><div class="check-big">&#x1F3C6;</div><div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:900">Game Over!</div><div style="font-size:14px;color:rgba(0,0,0,.5);margin-top:8px">Check the main screen for results</div></div>';
+      }
+    }
+  });
+  renderPlayerBid();
+}
+function showPlayerRevealWait(){
+  var m=MANGOES[round]||MANGOES[MANGOES.length-1];
+  document.getElementById('player-card-inner').innerHTML=
+    '<div class="submitted-state">'
+    +'<div style="font-size:52px;margin-bottom:12px;animation:float 2s ease-in-out infinite">&#x1F4B0;</div>'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:22px;font-weight:900;margin-bottom:8px">Prices revealed!</div>'
+    +'<div style="font-size:14px;color:rgba(0,0,0,.5);margin-bottom:20px">Check the host\'s screen to see how close you were</div>'
+    +'<div style="background:var(--dust);border-radius:8px;padding:14px 18px;font-size:13px;line-height:1.6;color:rgba(0,0,0,.6)">'
+    +'Round '+(round+1)+' of '+MANGOES.length+' &mdash; <strong>'+m.name+'</strong>'
+    +'</div>'
+    +'</div>';
+}
 function renderPlayerBid(){
   var el=document.getElementById('player-card-inner');
   if(round>=MANGOES.length){
@@ -541,7 +573,6 @@ function renderPlayerBid(){
   var safeName=playerName.replace(/[.#$[\]]/g,'_');
   dbGet('bids/round'+round+'/'+safeName,function(val){
     if(val!==null&&val!==undefined){
-      // already bid
       el.innerHTML='<div class="submitted-state"><div class="check-big">&#x2705;</div><div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700">Bid locked in!</div><div style="font-family:\'DM Mono\',monospace;font-size:28px;color:var(--leaf);margin:10px 0">'+SYM[currency]+val+'</div><div style="font-size:13px;color:rgba(0,0,0,.45)">Waiting for the host to reveal prices\u2026</div><div class="waiting-pulse"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>';
       return;
     }
@@ -608,15 +639,21 @@ function doReveal(){
     document.getElementById('rv-sub').textContent='True price: '+SYM[currency]+trueP+'/dozen \u00B7 '+m.origin;
     playRevealFanfare();
     dbOff(bidsListener);bidsListener=null;
+    dbSet('game/phase','revealed',null);
     show('s-reveal');
   });
 }
 function nextRound(){
   round++;
-  if(round>=MANGOES.length){showScores();return;}
+  if(round>=MANGOES.length){
+    dbSet('game/phase','done',null);
+    showScores();return;
+  }
   dbSet('game/round',round,function(){
-    dbSet('bids/round'+round,null,function(){
-      loadRound();show('s-game');playChime();
+    dbSet('game/phase','bidding',function(){
+      dbSet('bids/round'+round,null,function(){
+        loadRound();show('s-game');playChime();
+      });
     });
   });
 }
