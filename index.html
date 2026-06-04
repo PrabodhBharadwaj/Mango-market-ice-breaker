@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Alphonso Stock Market</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --saffron:#F4891F;--deep-orange:#C4591A;--mango:#FFD046;--cream:#FFF9EE;
+  --ink:#1A0F00;--leaf:#2D5A27;--dust:#F0E8D6;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23c4591a' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");pointer-events:none;z-index:0}
+.screen{display:none;position:relative;z-index:1;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
+/* TICKER */
+.ticker-bar{background:var(--ink);color:var(--mango);padding:9px 20px;display:flex;align-items:center;justify-content:space-between;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;flex-shrink:0}
+.ticker-wrap{overflow:hidden;flex:1;margin:0 20px}
+.ticker-inner{display:flex;gap:48px;white-space:nowrap;animation:tick 22s linear infinite}
+.ticker-inner span{color:var(--mango)}.ticker-inner .up{color:#7EE07E}.ticker-inner .dn{color:#FF7070}
+@keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:13px 28px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;font-size:15px;transition:transform .15s,box-shadow .15s;border-radius:4px}
+.btn:hover{transform:translateY(-2px)}.btn:active{transform:translateY(0)}
+.btn-gold{background:var(--mango);color:var(--ink);box-shadow:0 4px 0 var(--deep-orange),0 8px 24px rgba(244,137,31,.3)}
+.btn-gold:hover{box-shadow:0 6px 0 var(--deep-orange)}
+.btn-leaf{background:var(--leaf);color:#fff;box-shadow:0 4px 0 #1a3816}
+.btn-leaf:hover{box-shadow:0 6px 0 #1a3816}
+.btn-ghost{background:rgba(255,255,255,.1);color:white;border:1px solid rgba(255,255,255,.2)}
+.btn-outline{background:transparent;color:var(--mango);border:2px solid var(--saffron)}
+.btn-dark{background:var(--ink);color:var(--mango);box-shadow:0 4px 0 #000}
+/* SETUP SCREEN */
+.card{background:white;border-radius:10px;padding:36px;box-shadow:0 4px 0 #DDD,0 12px 40px rgba(0,0,0,.06);max-width:560px;width:100%}
+.card-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:900;margin-bottom:6px}
+.card-sub{color:rgba(0,0,0,.45);font-size:14px;margin-bottom:26px;line-height:1.55}
+.lbl{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:rgba(0,0,0,.45);margin-bottom:6px;margin-top:16px}
+.inp{width:100%;padding:11px 14px;border:2px solid #EEE;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:15px;color:var(--ink);transition:border-color .2s}
+.inp:focus{outline:none;border-color:var(--saffron)}
+.add-row{display:flex;gap:8px;margin-top:6px}
+.player-chip{display:flex;align-items:center;justify-content:space-between;background:var(--dust);border-radius:6px;padding:9px 14px;margin-bottom:6px}
+.chip-left{display:flex;align-items:center;gap:10px}
+.avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;color:white}
+.rm-btn{background:none;border:none;cursor:pointer;color:rgba(0,0,0,.3);font-size:20px;line-height:1;padding:0 4px}
+.rm-btn:hover{color:#C00}
+.divider{height:1px;background:#EEE;margin:22px 0}
+/* CONFIG SCREEN */
+#s-config{background:#111;align-items:center;justify-content:center;padding:40px 20px}
+.config-card{background:#1A1A1A;border:1px solid #333;border-radius:10px;padding:36px;max-width:560px;width:100%}
+.config-title{font-family:'Playfair Display',serif;font-size:24px;font-weight:900;color:var(--mango);margin-bottom:8px}
+.config-sub{color:rgba(255,255,255,.5);font-size:14px;line-height:1.6;margin-bottom:24px}
+.config-step{display:flex;gap:14px;margin-bottom:18px;align-items:flex-start}
+.step-num{width:28px;height:28px;border-radius:50%;background:var(--saffron);color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;margin-top:2px}
+.step-text{font-size:14px;color:rgba(255,255,255,.8);line-height:1.6}
+.step-text a{color:var(--mango);text-decoration:none}
+.step-text a:hover{text-decoration:underline}
+.step-text code{background:rgba(255,255,255,.1);padding:2px 7px;border-radius:3px;font-family:'DM Mono',monospace;font-size:13px;color:#FFE0A0}
+.inp-dark{width:100%;padding:11px 14px;border:2px solid #333;border-radius:6px;font-family:'DM Mono',monospace;font-size:13px;color:white;background:#111;transition:border-color .2s}
+.inp-dark:focus{outline:none;border-color:var(--saffron)}
+.inp-dark::placeholder{color:#555}
+/* SPLASH */
+#s-splash{background:linear-gradient(155deg,var(--ink) 0%,#3A1A00 55%,var(--deep-orange) 100%);align-items:center;justify-content:center;text-align:center;padding:48px 32px}
+.splash-emoji{font-size:88px;animation:float 3s ease-in-out infinite;display:block;margin-bottom:12px}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-14px) rotate(3deg)}}
+.splash-kicker{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.25em;text-transform:uppercase;color:var(--saffron);margin-bottom:10px}
+.splash-h1{font-family:'Playfair Display',serif;font-size:clamp(36px,6vw,68px);font-weight:900;color:var(--mango);line-height:1.05;margin-bottom:14px}
+.splash-h1 em{color:var(--saffron);font-style:italic}
+.splash-sub{font-size:16px;color:rgba(255,255,255,.65);max-width:460px;line-height:1.6;margin:0 auto 36px}
+/* SETUP (host adds players) */
+#s-setup{background:var(--cream);align-items:center;justify-content:center;padding:40px 20px}
+/* GAME DISPLAY */
+#s-game{background:var(--dust)}
+.game-top{background:white;border-bottom:1px solid #E8E0D0;padding:14px 28px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.game-top-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700}
+.round-pill{background:var(--ink);color:var(--mango);padding:6px 14px;border-radius:3px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.15em;text-transform:uppercase}
+.game-body{flex:1;display:grid;grid-template-columns:1fr 340px;gap:0}
+.game-left{padding:24px 28px;overflow-y:auto}
+.game-right{background:white;border-left:1px solid #E8E0D0;padding:24px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+.mango-photo{width:100%;height:220px;object-fit:cover;border-radius:8px;margin-bottom:18px;box-shadow:0 4px 16px rgba(0,0,0,.15)}
+.mango-headline{font-family:'Playfair Display',serif;font-size:32px;font-weight:900;line-height:1.1;margin-bottom:4px}
+.mango-region{font-family:'DM Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.2em;color:var(--deep-orange);margin-bottom:16px}
+.section-lbl{font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.2em;color:rgba(0,0,0,.35);margin-bottom:8px;margin-top:16px}
+.mango-desc{font-size:15px;line-height:1.7;color:#333}
+.pills{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:4px}
+.pill{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500}
+.p-sweet{background:#FFF0CC;color:#8A5700}.p-floral{background:#FFE8F0;color:#8A0050}
+.p-rich{background:#EEE8FF;color:#4A0080}.p-fibrous{background:#E8F4FF;color:#004A8A}
+.p-buttery{background:#FFF5E8;color:#8A4000}
+.rarity-bar{height:6px;background:#EEE;border-radius:3px;overflow:hidden;margin-bottom:4px}
+.rarity-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--saffron),var(--mango))}
+.fact-strip{background:linear-gradient(135deg,var(--ink),#3A1A00);border-radius:8px;padding:16px 20px;color:white;margin-top:20px}
+.fact-kicker{font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.2em;color:var(--saffron);margin-bottom:8px}
+.fact-text{font-size:14px;line-height:1.65;color:rgba(255,255,255,.85)}
+/* BID TRACKER */
+.bid-tracker-title{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;margin-bottom:4px}
+.bid-sub-info{font-size:12px;color:rgba(0,0,0,.4);font-family:'DM Mono',monospace;margin-bottom:12px}
+.bid-prog-wrap{background:#F5F0E8;border-radius:8px;padding:10px 14px;margin-bottom:10px}
+.bid-prog-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.bid-prog-label{font-size:13px;color:rgba(0,0,0,.5)}
+.bid-prog-count{font-family:'DM Mono',monospace;font-size:18px;font-weight:500;color:var(--ink)}
+.bid-prog-bar{width:100%;height:5px;background:#E8E0D0;border-radius:3px;overflow:hidden}
+.bid-prog-fill{height:100%;background:var(--leaf);border-radius:3px;transition:width .5s ease}
+.bids-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+.bid-row{display:flex;align-items:center;gap:10px;padding:9px 12px;background:#F8F4EE;border-radius:6px;transition:background .4s}
+.bid-row.done{background:#EDFAEF}
+.bid-row-name{flex:1;font-size:13px;font-weight:500}
+.bid-row-val{font-family:'DM Mono',monospace;font-size:14px;font-weight:500;color:var(--leaf)}
+.bid-row-pending{font-family:'DM Mono',monospace;font-size:12px;color:rgba(0,0,0,.3)}
+.host-controls{display:flex;gap:10px;padding-top:12px;border-top:1px solid #EEE;flex-wrap:wrap}
+/* PLAYER VIEW */
+#s-player{background:var(--cream);align-items:center;justify-content:center;padding:32px 20px}
+.player-card{background:white;border-radius:10px;padding:32px;box-shadow:0 4px 0 #DDD,0 12px 40px rgba(0,0,0,.06);max-width:420px;width:100%;text-align:center}
+.player-mango-img{width:100%;height:180px;object-fit:cover;border-radius:8px;margin-bottom:16px}
+.player-mango-name{font-family:'Playfair Display',serif;font-size:24px;font-weight:900;margin-bottom:4px}
+.player-mango-origin{font-family:'DM Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.15em;color:var(--deep-orange);margin-bottom:14px}
+.bid-input-wrap{display:flex;align-items:center;border:3px solid var(--ink);border-radius:8px;overflow:hidden;margin-bottom:6px}
+.bid-currency-sym{background:var(--ink);color:var(--mango);padding:14px 16px;font-family:'DM Mono',monospace;font-size:18px;font-weight:500;flex-shrink:0}
+.bid-num{flex:1;border:none;padding:14px 16px;font-family:'DM Mono',monospace;font-size:22px;font-weight:500;text-align:right;color:var(--ink);background:white}
+.bid-num:focus{outline:none}
+.bid-sub{font-size:12px;color:rgba(0,0,0,.4);font-family:'DM Mono',monospace}
+.submitted-state{text-align:center;padding:20px}
+.check-big{font-size:56px;margin-bottom:12px;animation:pop .4s cubic-bezier(.36,.07,.19,.97) both}
+@keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
+.waiting-pulse{display:flex;gap:6px;justify-content:center;margin-top:16px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--saffron);animation:pulsedot 1.2s ease-in-out infinite}
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+@keyframes pulsedot{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}
+/* REVEAL */
+#s-reveal{background:var(--ink);align-items:center;justify-content:center;padding:40px 24px;text-align:center}
+.reveal-h1{font-family:'Playfair Display',serif;font-size:clamp(28px,5vw,52px);color:var(--mango);font-weight:900;margin-bottom:6px}
+.reveal-sub{color:rgba(255,255,255,.5);font-size:14px;margin-bottom:32px}
+.prices-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:14px;max-width:820px;margin:0 auto 32px;width:100%}
+.price-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:22px 18px;transition:transform .3s;animation:popIn .5s ease backwards}
+.price-card:hover{transform:translateY(-4px)}
+@keyframes popIn{from{opacity:0;transform:scale(.8) translateY(20px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.pf{font-size:34px;margin-bottom:6px}
+.pc{font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.2em;color:rgba(255,255,255,.45);margin-bottom:10px}
+.pa{font-family:'Playfair Display',serif;font-size:26px;font-weight:900;color:white;margin-bottom:3px}
+.pa-note{font-size:11px;color:rgba(255,255,255,.4);font-family:'DM Mono',monospace;margin-bottom:4px}
+.pa-inr-equiv{font-size:12px;color:rgba(255,208,70,.65);font-family:'DM Mono',monospace;margin-bottom:8px;font-style:italic}
+.pbadge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.b-origin{background:#2D5A27;color:#7EE07E}.b-premium{background:#5A0000;color:#FF9090}
+.b-ultra{background:#3A2800;color:var(--mango)}.b-imported{background:#2A2A3A;color:#9090FF}
+.lb-box{background:rgba(255,255,255,.06);border-radius:10px;padding:22px;max-width:500px;margin:0 auto 28px;width:100%}
+.lb-title{font-family:'Playfair Display',serif;font-size:17px;color:var(--saffron);margin-bottom:14px}
+.lb-row{display:flex;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.07);animation:slideIn .4s ease backwards}
+@keyframes slideIn{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:translateX(0)}}
+.lb-rank{font-family:'DM Mono',monospace;font-size:13px;width:30px;color:rgba(255,255,255,.4)}
+.lb-rank.g{color:var(--mango)}.lb-rank.s{color:#CCC}.lb-rank.b{color:#CD7F32}
+.lb-name{flex:1;font-size:14px}
+.lb-bid{font-family:'DM Mono',monospace;font-size:12px;color:rgba(255,255,255,.6)}
+.lb-diff{font-family:'DM Mono',monospace;font-size:12px;margin-left:10px}
+.lb-diff.close{color:#7EE07E}.lb-diff.far{color:#FF9090}
+/* SCORES */
+#s-scores{background:var(--cream);align-items:center;justify-content:center;padding:48px 24px}
+.podium-wrap{display:flex;align-items:flex-end;justify-content:center;gap:14px;margin-bottom:36px}
+.podium-col{display:flex;flex-direction:column;align-items:center}
+.p-block{border-radius:6px 6px 0 0;width:84px;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:24px;font-weight:900;color:white}
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:white;padding:12px 24px;border-radius:6px;font-size:14px;z-index:9999;transition:transform .3s,opacity .3s;opacity:0;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+/* STATUS BADGE */
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.status-dot.live{background:#7EE07E;animation:pulsedot 1.5s infinite}
+.status-dot.offline{background:#FF7070}
+@media(max-width:720px){.game-body{grid-template-columns:1fr}.game-right{border-left:none;border-top:1px solid #E8E0D0}}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+
+<!-- ═══ SPLASH ═══ -->
+<div id="s-splash" class="screen active">
+  <div class="ticker-bar">
+    <span style="white-space:nowrap">&#x1F96D; AMRI EXCHANGE</span>
+    <div class="ticker-wrap"><div class="ticker-inner">
+      <span>ALPHONSO <span class="up">&#x2191; &#x20B9;850/doz</span></span>
+      <span>KESAR <span class="up">&#x2191; &#x20B9;620/doz</span></span>
+      <span>DASHERI <span class="dn">&#x2193; &#x20B9;380/doz</span></span>
+      <span>LANGRA <span class="up">&#x2191; &#x20B9;420/doz</span></span>
+      <span>MIYAZAKI <span class="up">&#x2191; &#x20B9;10,000/fruit</span></span>
+      <span>ALPHONSO <span class="up">&#x2191; &#x20B9;850/doz</span></span>
+      <span>KESAR <span class="up">&#x2191; &#x20B9;620/doz</span></span>
+      <span>DASHERI <span class="dn">&#x2193; &#x20B9;380/doz</span></span>
+      <span>LANGRA <span class="up">&#x2191; &#x20B9;420/doz</span></span>
+      <span>MIYAZAKI <span class="up">&#x2191; &#x20B9;10,000/fruit</span></span>
+    </div></div>
+    <span id="conn-status"><span class="status-dot offline" id="conn-dot"></span><span id="conn-label">Offline</span></span>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 32px">
+    <span class="splash-emoji">&#x1F96D;</span>
+    <div class="splash-kicker">Design Team Icebreaker &middot; Show &amp; Tell</div>
+    <h1 class="splash-h1">The Alphonso<br><em>Stock Market</em></h1>
+    <p class="splash-sub">Bid on premium Indian mangoes based on description alone. Witness the price chaos across India, UK, Czech Republic &amp; Germany.</p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center">
+      <button class="btn btn-gold" onclick="show('s-setup')">&#x1F3AF; Host: Set Up Game</button>
+      <button class="btn btn-ghost" onclick="show('s-player');renderPlayerJoin()">&#x1F64B; Join as Player</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SETUP ═══ -->
+<div id="s-setup" class="screen">
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:32px 20px">
+    <div class="card">
+      <div class="card-title">&#x1F3AE; Host Setup</div>
+      <div class="card-sub">Add everyone&rsquo;s name. They open this same file on their phone, tap &ldquo;Join as Player&rdquo;, pick their name, and bid live. The tracker on the right updates in real time.</div>
+      <label class="lbl">Add Players</label>
+      <div id="chips-list"></div>
+      <div class="add-row">
+        <input class="inp" id="p-input" placeholder="Name, then Enter" style="flex:1" onkeydown="if(event.key==='Enter')addPlayer()">
+        <button class="btn btn-dark" onclick="addPlayer()" style="padding:11px 20px">Add</button>
+      </div>
+      <label class="lbl" style="margin-top:20px">Bidding Currency</label>
+      <select class="inp" id="currency-sel">
+        <option value="GBP">&#xa3; GBP &mdash; UK</option>
+        <option value="EUR">&#x20AC; EUR &mdash; Europe</option>
+        <option value="INR">&#x20B9; INR &mdash; India</option>
+        <option value="USD">$ USD</option>
+      </select>
+      <div class="divider"></div>
+      <button class="btn btn-leaf" style="width:100%;justify-content:center" onclick="startGame()">
+        &#x1F514; Ring the Bell &mdash; Start Game
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ GAME (host display) ═══ -->
+<div id="s-game" class="screen">
+  <div class="ticker-bar">
+    <span style="white-space:nowrap">&#x1F96D; AMRI EXCHANGE</span>
+    <div class="ticker-wrap"><div class="ticker-inner" id="live-ticker">
+      <span>BIDDING OPEN</span><span>BIDDING OPEN</span>
+    </div></div>
+    <span id="hdr-round">Round 1/4</span>
+  </div>
+  <div class="game-top">
+    <span class="game-top-title" id="gt-name">Loading...</span>
+    <span class="round-pill" id="gt-pill">Round 1 of 4</span>
+  </div>
+  <div class="game-body">
+    <div class="game-left">
+      <img id="g-photo" class="mango-photo" src="" alt="Mango">
+      <div class="mango-headline" id="g-name"></div>
+      <div class="mango-region" id="g-origin"></div>
+      <div class="section-lbl">Description</div>
+      <div class="mango-desc" id="g-desc"></div>
+      <div class="section-lbl">Taste Profile</div>
+      <div class="pills" id="g-taste"></div>
+      <div class="section-lbl">On the Tongue</div>
+      <div class="mango-desc" id="g-feel" style="font-style:italic;color:#555"></div>
+      <div class="section-lbl">Prestige &amp; Rarity</div>
+      <div class="rarity-bar"><div class="rarity-fill" id="g-rarity" style="width:80%"></div></div>
+      <div class="fact-strip">
+        <div class="fact-kicker">&#x1F4A1; Did You Know</div>
+        <div class="fact-text" id="g-fact"></div>
+      </div>
+    </div>
+    <div class="game-right">
+      <div>
+        <div class="bid-tracker-title">Live Bid Tracker</div>
+        <div class="bid-sub-info" id="bt-currency">per dozen</div>
+        <div class="bid-prog-wrap">
+          <div class="bid-prog-top">
+            <span class="bid-prog-label">Bids received</span>
+            <span class="bid-prog-count" id="prog-count">0/0</span>
+          </div>
+          <div class="bid-prog-bar"><div class="bid-prog-fill" id="prog-fill" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="bids-list" id="bids-list"></div>
+      <div class="host-controls">
+        <button class="btn btn-gold" style="flex:1;justify-content:center" onclick="doReveal()">&#x1F513; Reveal Prices</button>
+        <button class="btn" style="background:rgba(0,0,0,.08);color:var(--ink);border:1px solid rgba(0,0,0,.12)" onclick="playDrumroll()">&#x1F941; Drumroll</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PLAYER VIEW ═══ -->
+<div id="s-player" class="screen">
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:28px 20px">
+    <div class="player-card" id="player-card-inner">
+      <div style="font-size:32px;margin-bottom:12px">&#x1F96D;</div>
+      <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:900;margin-bottom:8px">Loading...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ REVEAL ═══ -->
+<div id="s-reveal" class="screen">
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;width:100%">
+    <div style="font-size:72px;animation:float 2.5s ease-in-out infinite;margin-bottom:8px">&#x1F4B0;</div>
+    <div class="reveal-h1" id="rv-name">Alphonso</div>
+    <div class="reveal-sub" id="rv-sub">Here's what the world charges for it</div>
+    <div class="prices-grid" id="prices-grid"></div>
+    <div class="lb-box">
+      <div class="lb-title">This Round &mdash; Closest Bids &#x1F3AF;</div>
+      <div id="lb-rows"></div>
+    </div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center">
+      <button class="btn btn-ghost" onclick="nextRound()">Next Mango &#x2192;</button>
+      <button class="btn btn-outline" onclick="showScores()">Full Scoreboard</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SCORES ═══ -->
+<div id="s-scores" class="screen">
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;width:100%">
+    <div style="font-family:'Playfair Display',serif;font-size:clamp(30px,5vw,52px);font-weight:900;text-align:center;margin-bottom:8px">&#x1F3C6; Final Leaderboard</div>
+    <div style="text-align:center;color:rgba(0,0,0,.4);font-size:14px;margin-bottom:36px">Lowest total penalty = closest bidder overall</div>
+    <div class="podium-wrap" id="podium"></div>
+    <div class="lb-box" style="background:white;border:1px solid #EEE">
+      <div class="lb-title" style="color:var(--deep-orange)">All Players</div>
+      <div id="full-lb"></div>
+    </div>
+    <div style="display:flex;gap:14px;margin-top:28px;flex-wrap:wrap;justify-content:center">
+      <button class="btn btn-leaf" onclick="resetAll()">Play Again &#x1F504;</button>
+      <button class="btn btn-gold" onclick="show('s-splash')">&#x2190; Home</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+  import { getDatabase, ref, set, get, onValue, off } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDfyQbdu2mhJ62COXjdJO9jt7s7LwyCpFk",
+    authDomain: "mango-market-30a58.firebaseapp.com",
+    databaseURL: "https://mango-market-30a58-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "mango-market-30a58",
+    storageBucket: "mango-market-30a58.firebasestorage.app",
+    messagingSenderId: "59087919284",
+    appId: "1:59087919284:web:6e24e72d8e210f22a15fe1"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const database = getDatabase(app);
+
+  // Expose to global scope for the main script
+  window._fbRef    = (path) => ref(database, path);
+  window._fbSet    = (path, val) => set(ref(database, path), val);
+  window._fbGet    = (path) => get(ref(database, path)).then(s => s.val());
+  window._fbOn     = (path, cb) => { const r = ref(database, path); onValue(r, s => cb(s.val())); return r; };
+  window._fbOff    = (r) => { if(r) off(r); };
+
+  // Connection status
+  onValue(ref(database, '.info/connected'), snap => {
+    const live = snap.val() === true;
+    const dot = document.getElementById('conn-dot');
+    const lbl = document.getElementById('conn-label');
+    if(dot) dot.className = 'status-dot ' + (live ? 'live' : 'offline');
+    if(lbl) lbl.textContent = live ? 'Live' : 'Offline';
+  });
+
+  window._fbReady = true;
+  console.log('Firebase connected');
+</script>
+
+<script>
+/* ===== AUDIO ===== */
+var AC;
+function getAC(){if(!AC)AC=new(window.AudioContext||window.webkitAudioContext)();return AC;}
+function playTone(f,t,d,v,dl){v=v||0.3;dl=dl||0;try{var ac=getAC(),o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type=t;o.frequency.setValueAtTime(f,ac.currentTime+dl);g.gain.setValueAtTime(0,ac.currentTime+dl);g.gain.linearRampToValueAtTime(v,ac.currentTime+dl+0.02);g.gain.linearRampToValueAtTime(0,ac.currentTime+dl+d);o.start(ac.currentTime+dl);o.stop(ac.currentTime+dl+d+0.05);}catch(e){}}
+function playChime(){playTone(880,'sine',0.4,0.25);playTone(1109,'sine',0.35,0.18,0.18);playTone(1320,'sine',0.3,0.12,0.32);}
+function playBidSound(){playTone(520,'triangle',0.1,0.2);playTone(780,'sine',0.07,0.12,0.09);}
+function playRevealFanfare(){[523,659,784,1047].forEach(function(n,i){playTone(n,'sawtooth',0.3,0.15,i*0.12);});setTimeout(function(){playTone(1047,'sine',0.6,0.25);playTone(1319,'sine',0.5,0.2,0.05);},580);}
+function playDrumroll(){try{var ac=getAC(),t=ac.currentTime,iv=0.12;for(var i=0;i<32;i++){iv=Math.max(0.03,iv*0.92);var buf=ac.createBuffer(1,Math.floor(ac.sampleRate*0.04),ac.sampleRate),d=buf.getChannelData(0);for(var j=0;j<d.length;j++)d[j]=(Math.random()*2-1)*Math.exp(-j/(d.length*0.3));var src=ac.createBufferSource(),g=ac.createGain();src.buffer=buf;src.connect(g);g.connect(ac.destination);g.gain.setValueAtTime(0.4,t);src.start(t);t+=iv;}setTimeout(playRevealFanfare,(t-ac.currentTime)*1000+300);}catch(e){}}
+
+/* ===== DATA ===== */
+var EUR_PER_INR=0.011;
+var COLORS=["#E8501A","#2D7D3A","#1A5FA8","#8A2DBE","#C4881A","#BE2D2D","#1A8A8A","#556B8A","#6B8A55","#8A556B","#1A8A3A","#8A7A1A","#2D3A7D","#7D2D3A","#3A7D55","#7D553A"];
+var SYM={GBP:"\u00A3",EUR:"\u20AC",INR:"\u20B9",USD:"$"};
+var MANGOES=[
+  {name:"Alphonso",origin:"Ratnagiri, Maharashtra \u00B7 GI Protected",
+   photo:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Hapus_Mango.jpg/800px-Hapus_Mango.jpg",
+   desc:"The undisputed King of Indian mangoes. Small, egg-shaped, skin that blushes golden-yellow-orange. The flesh is butter-soft, saffron-coloured, completely fibreless, and obscenely fragrant \u2014 like someone dissolved florals, honey, and afternoon sunlight into a single fruit. India\u2019s No.\u00A01 wedding gift and midlife crisis fruit.",
+   tastes:["sweet","floral","rich","buttery"],
+   feel:"Completely fibreless \u2014 melts on the tongue like cold butter. No resistance, no strings, just a slow golden collapse. The juice runs warm and lingers.",
+   rarity:90,fact:"Named after Afonso de Albuquerque, the Portuguese governor who introduced grafting techniques to Goa in the 16th century. Only Ratnagiri and Devgad districts can legally call it Alphonso \u2014 like Champagne, it\u2019s GI-protected.",
+   prices:{India:{d:"\u20B9800\u20131,200",n:"per dozen \u00B7 Apr\u2013May",b:"origin",l:"Farm Gate",inr:1000},UK:{d:"\u00A318\u201325",n:"per dozen \u00B7 Waitrose",b:"premium",l:"Premium Import"},Germany:{d:"\u20AC22\u201330",n:"per dozen",b:"imported",l:"Specialty Import"},"Czech Republic":{d:"\u20AC25\u201335",n:"per dozen",b:"ultra",l:"Ultra Rare"}},
+   flags:{India:"\uD83C\uDDEE\uD83C\uDDF3",UK:"\uD83C\uDDEC\uD83C\uDDE7",Germany:"\uD83C\uDDE9\uD83C\uDDEA","Czech Republic":"\uD83C\uDDE8\uD83C\uDDFF"},
+   truePrice:{GBP:22,EUR:27,INR:1000,USD:28}},
+  {name:"Kesar",origin:"Gir Forest, Gujarat \u00B7 GI Protected",
+   photo:"https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Hapus_%26_Kesar_Mangoes.jpg/800px-Hapus_%26_Kesar_Mangoes.jpg",
+   desc:"The Queen of Mangoes. Named for kesar \u2014 saffron. The flesh is deep burnished orange-gold, richer and heavier than Alphonso, almost custard-like. Less delicate floral, more raw sweetness. The mango that makes Gujarati families drive 6 hours to the farm in May and come back with a car full of crates.",
+   tastes:["sweet","rich","floral"],
+   feel:"Dense and creamy \u2014 like sweetened condensed milk in fruit form. A slight graininess that gives way to pure juice. The aftertaste lingers for minutes.",
+   rarity:75,fact:"Kesar grows in the black soil around Gir Forest \u2014 last wild home of the Asiatic lion. Farmers believe the mineral composition of this specific soil is irreproducible. GI tag granted 2011.",
+   prices:{India:{d:"\u20B9600\u2013900",n:"per dozen \u00B7 Gir region",b:"origin",l:"Farm Gate",inr:750},UK:{d:"\u00A315\u201320",n:"per dozen",b:"premium",l:"Good Find"},Germany:{d:"\u20AC20\u201328",n:"per dozen",b:"imported",l:"Imported"},"Czech Republic":{d:"\u20AC28\u201338",n:"per dozen",b:"ultra",l:"Rare"}},
+   flags:{India:"\uD83C\uDDEE\uD83C\uDDF3",UK:"\uD83C\uDDEC\uD83C\uDDE7",Germany:"\uD83C\uDDE9\uD83C\uDDEA","Czech Republic":"\uD83C\uDDE8\uD83C\uDDFF"},
+   truePrice:{GBP:17,EUR:24,INR:750,USD:21}},
+  {name:"Chaunsa",origin:"North India & Pakistan \u00B7 Contested Heritage",
+   photo:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Chaunsa_mango.jpg/800px-Chaunsa_mango.jpg",
+   desc:"A mango with geopolitical complexity \u2014 beloved equally in India and Pakistan, fiercely claimed by both. Thin-skinned, intensely juicy, almost syrupy sweet with a heavy musky-floral note that is its own category. Bihar and Punjab produce it on the Indian side; Multan is the epicentre on the Pakistani side.",
+   tastes:["sweet","floral","fibrous"],
+   feel:"Very juicy \u2014 almost dangerously so. Soft with just enough body to push back. Eating one properly requires a commitment to getting your elbows wet.",
+   rarity:60,fact:"Named after the Battle of Chausa (1539), where Sher Shah Suri defeated Mughal Emperor Humayun. He allegedly celebrated the victory with this mango and named it after the battlefield. A fruit named after a Mughal emperor\u2019s military defeat.",
+   prices:{India:{d:"\u20B9400\u2013700",n:"per dozen \u00B7 North India",b:"origin",l:"Local Price",inr:550},UK:{d:"\u00A312\u201318",n:"per dozen",b:"premium",l:"Common Import"},Germany:{d:"\u20AC18\u201326",n:"per dozen",b:"imported",l:"Imported"},"Czech Republic":{d:"\u20AC22\u201332",n:"per dozen",b:"ultra",l:"Specialty"}},
+   flags:{India:"\uD83C\uDDEE\uD83C\uDDF3",UK:"\uD83C\uDDEC\uD83C\uDDE7",Germany:"\uD83C\uDDE9\uD83C\uDDEA","Czech Republic":"\uD83C\uDDE8\uD83C\uDDFF"},
+   truePrice:{GBP:15,EUR:22,INR:550,USD:19}},
+  {name:"Miyazaki",origin:"Miyazaki, Japan (now also Madhya Pradesh, India)",
+   photo:"https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Miyazaki_mango.jpg/800px-Miyazaki_mango.jpg",
+   desc:"Originally Japanese, now grown in India at equally insane prices. Deep crimson-purple skin \u2014 more like a polished gemstone than a fruit. In Japan, sold individually, gift-wrapped in velvet boxes. In India, a single fruit has been auctioned for \u20B921,000. Guarded by armed security at some farms.",
+   tastes:["sweet","rich","floral"],
+   feel:"Utterly smooth \u2014 no fibre, no grain, no resistance. The sweetness is almost unreal: 15%+ sugar content with none of the tartness that usually balances tropical fruit. Absurdly expensive and worth every rupee of the psychological experience.",
+   rarity:99,fact:"A pair of Miyazaki mangoes (\u2018Taiyo no Tamago\u2019 \u2014 Egg of the Sun) sold at auction in Japan for \u00A550,000 (~\u20AC300) in 2023 \u2014 per pair. Requirements: min 350g per fruit, 15%+ sugar. An MP farm had their crop guarded by armed police after thieves stole \u20B91.5 lakh worth.",
+   prices:{India:{d:"\u20B92,700\u201321,000",n:"per single fruit",b:"ultra",l:"Luxury Single",inr:10000},UK:{d:"\u00A350\u2013120",n:"per fruit \u00B7 Harrods",b:"ultra",l:"Harrods Tier"},Germany:{d:"\u20AC80\u2013200",n:"per fruit",b:"ultra",l:"Ultra Luxury"},"Czech Republic":{d:"\u20AC100\u2013250",n:"per fruit",b:"ultra",l:"Call Ahead"}},
+   flags:{India:"\uD83C\uDDEE\uD83C\uDDF3",UK:"\uD83C\uDDEC\uD83C\uDDE7",Germany:"\uD83C\uDDE9\uD83C\uDDEA","Czech Republic":"\uD83C\uDDE8\uD83C\uDDFF"},
+   truePrice:{GBP:80,EUR:140,INR:10000,USD:100}}
+];
+
+/* ===== STATE ===== */
+var players=[],currency="GBP",round=0;
+var scores={},playerName="";
+var bidsListener=null;
+
+/* ===== NAV ===== */
+function show(id){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+function toast(msg,dur){dur=dur||2400;var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},dur);}
+
+/* ===== DB HELPERS ===== */
+function dbSet(path,val,cb){
+  if(!window._fbReady){if(cb)cb();return;}
+  window._fbSet(path,val).then(function(){if(cb)cb();}).catch(function(e){console.error('dbSet',e);if(cb)cb();});
+}
+function dbGet(path,cb){
+  if(!window._fbReady){cb(null);return;}
+  window._fbGet(path).then(function(v){cb(v);}).catch(function(e){console.error('dbGet',e);cb(null);});
+}
+function dbOn(path,cb){
+  if(!window._fbReady)return null;
+  return window._fbOn(path,cb);
+}
+function dbOff(r){if(r)window._fbOff(r);}
+
+/* ===== SETUP ===== */
+function addPlayer(){
+  var inp=document.getElementById('p-input'),n=inp.value.trim();
+  if(!n||players.indexOf(n)>-1){inp.focus();return;}
+  players.push(n);scores[n]=0;
+  renderChips();inp.value='';inp.focus();playBidSound();
+}
+function removePlayer(n){
+  players=players.filter(function(p){return p!==n;});
+  delete scores[n];renderChips();
+}
+function renderChips(){
+  document.getElementById('chips-list').innerHTML=players.map(function(p,i){
+    return '<div class="player-chip"><div class="chip-left"><div class="avatar" style="background:'+COLORS[i%COLORS.length]+'">'+p[0].toUpperCase()+'</div><span style="font-size:14px;font-weight:500">'+p+'</span></div><button class="rm-btn" onclick="removePlayer(\''+p.replace(/'/g,"\\'")+'\')">&#x00D7;</button></div>';
+  }).join('');
+}
+function startGame(){
+  if(players.length<1){toast("Add at least one player!");return;}
+  currency=document.getElementById('currency-sel').value;
+  round=0;players.forEach(function(p){scores[p]=0;});
+  // Write game state to Firebase
+  dbSet('game',{players:players,currency:currency,round:0,phase:'bidding'},function(){
+    dbSet('bids/round0',null,function(){
+      loadRound();show('s-game');playChime();
+    });
+  });
+}
+
+/* ===== GAME ===== */
+var localBids={};
+function loadRound(){
+  var m=MANGOES[round];
+  localBids={};
+  document.getElementById('hdr-round').textContent='Round '+(round+1)+'/'+MANGOES.length;
+  document.getElementById('gt-name').textContent=m.name;
+  document.getElementById('gt-pill').textContent='Round '+(round+1)+' of '+MANGOES.length+' \u00B7 Bidding Open';
+  var img=document.getElementById('g-photo');
+  img.src=m.photo;img.onerror=function(){this.src='https://images.unsplash.com/photo-1601493700631-2b16ec4b4716?w=800&q=80';this.onerror=null;};
+  document.getElementById('g-name').textContent=m.name;
+  document.getElementById('g-origin').textContent=m.origin;
+  document.getElementById('g-desc').textContent=m.desc;
+  document.getElementById('g-feel').textContent=m.feel;
+  document.getElementById('g-rarity').style.width=m.rarity+'%';
+  document.getElementById('g-fact').textContent=m.fact;
+  var pc={sweet:'p-sweet',floral:'p-floral',rich:'p-rich',fibrous:'p-fibrous',buttery:'p-buttery'};
+  document.getElementById('g-taste').innerHTML=m.tastes.map(function(t){return '<span class="pill '+(pc[t]||'p-sweet')+'">'+t[0].toUpperCase()+t.slice(1)+'</span>';}).join('');
+  document.getElementById('bt-currency').textContent='per dozen \u00B7 in '+SYM[currency]+' '+currency;
+  // Listen for bids
+  dbOff(bidsListener);
+  bidsListener=dbOn('bids/round'+round,function(data){
+    localBids=data||{};
+    renderBidTracker();
+  });
+  renderBidTracker();
+}
+function renderBidTracker(){
+  var sub=Object.keys(localBids).length,total=players.length;
+  var pct=total>0?(sub/total*100):0;
+  document.getElementById('prog-count').textContent=sub+'/'+total;
+  document.getElementById('prog-fill').style.width=pct+'%';
+  document.getElementById('bids-list').innerHTML=players.map(function(p,i){
+    var safeName=p.replace(/[.#$[\]]/g,'_');
+    var has=localBids.hasOwnProperty(safeName);
+    return '<div class="bid-row'+(has?' done':'')+'"><div class="avatar" style="background:'+COLORS[i%COLORS.length]+';width:26px;height:26px;font-size:11px">'+p[0].toUpperCase()+'</div><span class="bid-row-name">'+p+'</span>'+(has?'<span class="bid-row-val">'+SYM[currency]+localBids[safeName]+'</span>':'<span class="bid-row-pending">waiting\u2026</span>')+'</div>';
+  }).join('');
+}
+
+/* ===== PLAYER VIEW ===== */
+function renderPlayerJoin(){
+  var el=document.getElementById('player-card-inner');
+  if(!playerName){
+    // Try fetching player list from Firebase
+    dbGet('game',function(data){
+      var pList=data&&data.players?data.players:players;
+      if(pList.length===0){
+        el.innerHTML='<div style="font-size:32px;margin-bottom:12px">&#x1F96D;</div><div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:900;margin-bottom:8px">Waiting for host...</div><div style="font-size:14px;color:rgba(0,0,0,.5)">The host hasn\'t started the game yet. Refresh in a moment.</div><br><button class="btn btn-gold" style="width:100%;justify-content:center" onclick="renderPlayerJoin()">Refresh &#x1F504;</button>';
+        return;
+      }
+      if(data){players=data.players;currency=data.currency;round=data.round||0;}
+      el.innerHTML='<div style="font-family:\'Playfair Display\',serif;font-size:22px;font-weight:900;margin-bottom:8px">&#x1F96D; Join the Exchange</div>'
+        +'<div style="font-size:14px;color:rgba(0,0,0,.5);margin-bottom:22px">Tap your name to start bidding</div>'
+        +pList.map(function(p){return '<button class="btn btn-dark" style="width:100%;justify-content:center;margin-bottom:8px" onclick="selectPlayer(\''+p.replace(/'/g,"\\'")+'\')">I am '+p+'</button>';}).join('');
+    });
+    return;
+  }
+  renderPlayerBid();
+}
+function selectPlayer(name){playerName=name;playChime();renderPlayerBid();}
+function renderPlayerBid(){
+  var el=document.getElementById('player-card-inner');
+  if(round>=MANGOES.length){
+    el.innerHTML='<div class="submitted-state"><div class="check-big">&#x1F3C6;</div><div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:900">Game Over!</div><div style="font-size:14px;color:rgba(0,0,0,.5);margin-top:8px">Check the main screen for results</div></div>';
+    return;
+  }
+  var m=MANGOES[round];
+  var safeName=playerName.replace(/[.#$[\]]/g,'_');
+  dbGet('bids/round'+round+'/'+safeName,function(val){
+    if(val!==null&&val!==undefined){
+      // already bid
+      el.innerHTML='<div class="submitted-state"><div class="check-big">&#x2705;</div><div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700">Bid locked in!</div><div style="font-family:\'DM Mono\',monospace;font-size:28px;color:var(--leaf);margin:10px 0">'+SYM[currency]+val+'</div><div style="font-size:13px;color:rgba(0,0,0,.45)">Waiting for the host to reveal prices\u2026</div><div class="waiting-pulse"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>';
+      return;
+    }
+    el.innerHTML='<img src="'+m.photo+'" class="player-mango-img" onerror="this.src=\'https://images.unsplash.com/photo-1601493700631-2b16ec4b4716?w=600&q=80\';this.onerror=null" alt="'+m.name+'">'
+      +'<div class="player-mango-name">'+m.name+'</div>'
+      +'<div class="player-mango-origin">'+m.origin+'</div>'
+      +'<div style="margin:20px 0">'
+      +'<div style="font-family:\'DM Mono\',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.15em;color:rgba(0,0,0,.4);margin-bottom:8px">Your bid &mdash; '+SYM[currency]+' '+currency+' per dozen</div>'
+      +'<div class="bid-input-wrap"><div class="bid-currency-sym">'+SYM[currency]+'</div>'
+      +'<input type="number" class="bid-num" id="bid-input" placeholder="0.00" min="0" step="0.5" onkeydown="if(event.key===\'Enter\')submitBid()">'
+      +'</div>'
+      +'<div class="bid-sub">Playing as: <strong>'+playerName+'</strong> &middot; Round '+(round+1)+' of '+MANGOES.length+'</div>'
+      +'</div>'
+      +'<button class="btn btn-leaf" style="width:100%;justify-content:center" onclick="submitBid()">&#x1F512; Lock In My Bid</button>';
+  });
+}
+function submitBid(){
+  var inp=document.getElementById('bid-input');
+  var val=parseFloat(inp&&inp.value)||0;
+  if(val<=0){toast("Enter a price above 0!");return;}
+  var safeName=playerName.replace(/[.#$[\]]/g,'_');
+  dbSet('bids/round'+round+'/'+safeName,val,function(){
+    playBidSound();
+    toast("Bid locked: "+SYM[currency]+val+" \uD83D\uDD12");
+    renderPlayerBid();
+  });
+}
+
+/* ===== REVEAL ===== */
+function doReveal(){
+  var m=MANGOES[round];
+  var trueP=m.truePrice[currency];
+  // Get final bids snapshot
+  dbGet('bids/round'+round,function(data){
+    var bids=data||{};
+    // update scores
+    players.forEach(function(p){
+      var safe=p.replace(/[.#$[\]]/g,'_');
+      var bid=bids&&bids[safe]!==undefined?bids[safe]:0;
+      scores[p]+=(Math.abs(bid-trueP));
+    });
+    // price cards
+    var countries=Object.keys(m.prices);
+    document.getElementById('prices-grid').innerHTML=countries.map(function(c,i){
+      var pr=m.prices[c],flag=m.flags[c];
+      var inrLine='';
+      if(c==='India'&&pr.inr){var eq=(pr.inr*EUR_PER_INR).toFixed(0);inrLine='<div class="pa-inr-equiv">\u2248 \u20AC'+eq+' equivalent</div>';}
+      return '<div class="price-card" style="animation-delay:'+(i*0.13)+'s"><div class="pf">'+flag+'</div><div class="pc">'+c+'</div><div class="pa">'+pr.d+'</div><div class="pa-note">'+pr.n+'</div>'+inrLine+'<span class="pbadge b-'+pr.b+'">'+pr.l+'</span></div>';
+    }).join('');
+    // leaderboard
+    var sorted=players.slice().sort(function(a,b){
+      var sa=a.replace(/[.#$[\]]/g,'_'),sb=b.replace(/[.#$[\]]/g,'_');
+      var ba=bids&&bids[sa]!==undefined?bids[sa]:0,bb=bids&&bids[sb]!==undefined?bids[sb]:0;
+      return Math.abs(ba-trueP)-Math.abs(bb-trueP);
+    });
+    var rc=['g','s','b'],re=['\uD83E\uDD47','\uD83E\uDD48','\uD83E\uDD49'];
+    document.getElementById('lb-rows').innerHTML=sorted.map(function(p,i){
+      var safe=p.replace(/[.#$[\]]/g,'_');
+      var bid=bids&&bids[safe]!==undefined?bids[safe]:0;
+      var diff=Math.abs(bid-trueP),pi=players.indexOf(p);
+      return '<div class="lb-row" style="animation-delay:'+(i*0.1)+'s"><span class="lb-rank '+(rc[i]||'')+'">'+(re[i]||(i+1))+'</span><div class="avatar" style="background:'+COLORS[pi%COLORS.length]+';width:24px;height:24px;font-size:11px;color:white;margin-right:8px">'+p[0].toUpperCase()+'</div><span class="lb-name">'+p+'</span><span class="lb-bid">'+SYM[currency]+bid+'</span><span class="lb-diff '+(diff<trueP*0.35?'close':'far')+'">\u00B1'+SYM[currency]+diff.toFixed(1)+'</span></div>';
+    }).join('');
+    document.getElementById('rv-name').textContent=m.name;
+    document.getElementById('rv-sub').textContent='True price: '+SYM[currency]+trueP+'/dozen \u00B7 '+m.origin;
+    playRevealFanfare();
+    dbOff(bidsListener);bidsListener=null;
+    show('s-reveal');
+  });
+}
+function nextRound(){
+  round++;
+  if(round>=MANGOES.length){showScores();return;}
+  dbSet('game/round',round,function(){
+    dbSet('bids/round'+round,null,function(){
+      loadRound();show('s-game');playChime();
+    });
+  });
+}
+
+/* ===== SCORES ===== */
+function showScores(){
+  var sorted=players.slice().sort(function(a,b){return scores[a]-scores[b];});
+  var podOrd=sorted.length>=3?[sorted[1],sorted[0],sorted[2]]:sorted.length===2?[null,sorted[0],sorted[1]]:[null,sorted[0],null];
+  var podH=['88px','124px','72px'],podRk=['2nd','1st','3rd'],podCrown=[false,true,false];
+  document.getElementById('podium').innerHTML=podOrd.map(function(p,i){
+    if(!p)return'<div style="width:84px"></div>';
+    var ci=players.indexOf(p);
+    return'<div class="podium-col"><div style="position:relative;margin-bottom:8px">'+(podCrown[i]?'<div style="position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:18px">&#x1F451;</div>':'')+'<div class="avatar" style="background:'+COLORS[ci%COLORS.length]+';width:52px;height:52px;font-size:20px;border:3px solid white">'+p[0].toUpperCase()+'</div></div><div style="font-size:12px;font-weight:600;margin:8px 0 3px;text-align:center;max-width:80px">'+p+'</div><div style="font-family:\'DM Mono\',monospace;font-size:11px;color:rgba(0,0,0,.45);margin-bottom:6px">\u00B1'+SYM[currency]+scores[p].toFixed(1)+'</div><div class="p-block" style="background:'+COLORS[ci%COLORS.length]+';height:'+podH[i]+'">'+podRk[i]+'</div></div>';
+  }).join('');
+  var rc2=['g','s','b'],re2=['\uD83E\uDD47','\uD83E\uDD48','\uD83E\uDD49'];
+  document.getElementById('full-lb').innerHTML=sorted.map(function(p,i){
+    var ci=players.indexOf(p);
+    return'<div class="lb-row" style="animation-delay:'+(i*0.08)+'s;border-color:#EEE"><span class="lb-rank '+(rc2[i]||'')+'" style="color:'+(['#E8A020','#888','#CD7F32','rgba(0,0,0,.35)'][Math.min(i,3)])+'">'+(re2[i]||(i+1))+'</span><div class="avatar" style="background:'+COLORS[ci%COLORS.length]+';width:24px;height:24px;font-size:11px;color:white;margin-right:8px">'+p[0].toUpperCase()+'</div><span class="lb-name" style="color:var(--ink)">'+p+'</span><span class="lb-bid" style="color:rgba(0,0,0,.5)">Total: \u00B1'+SYM[currency]+scores[p].toFixed(1)+'</span></div>';
+  }).join('');
+  show('s-scores');
+}
+function resetAll(){
+  players=[];scores={};round=0;localBids={};playerName='';
+  dbSet('game',null,function(){dbSet('bids',null,function(){});});
+  renderChips();show('s-setup');
+}
+</script>
+</body>
+</html>
